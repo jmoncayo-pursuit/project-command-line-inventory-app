@@ -1,0 +1,47 @@
+[
+  {
+    "id": "1",
+    "name": "Chocolate Chip Cookie",
+    "priceInCents": 150,
+    "inStock": true,
+    "isVegan": false
+  },
+  {
+    "id": "2",
+    "name": "Oatmeal Raisin Cookie",
+    "priceInCents": 130,
+    "inStock": true,
+    "isVegan": true
+  },
+  {
+    "id": "3",
+    "name": "Peanut Butter Cookie",
+    "priceInCents": 160,
+    "inStock": false,
+    "isGlutenFree": true
+  },
+  {
+    "id": "random_generated_id",
+    "name": "Sugar Cookie",
+    "priceInCents": 140,
+    "inStock": true
+  },
+  {
+    "id": "x5t5FuOKijgvX65vTbfI_",
+    "name": "Snicker Doodle",
+    "priceInCents": null,
+    "inStock": "true"
+  },
+  {
+    "id": "mQoZ3yrszziRCZZdJ9Vn4",
+    "name": "Moinil ",
+    "priceInCents": null,
+    "inStock": "false"
+  },
+  {
+    "id": "zBwq1nHSOELGOgVoQofj9",
+    "name": "Larry the Carry Crunch",
+    "priceInCents": null,
+    "inStock": "true"
+  }
+]
