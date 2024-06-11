@@ -2,23 +2,20 @@
   {
     "id": "1",
     "name": "Chocolate Chip Cookie",
-    "priceInCents": 150,
-    "inStock": true,
-    "isVegan": false
+    "priceInCents": 30,
+    "inStock": true
   },
   {
     "id": "2",
     "name": "Oatmeal Raisin Cookie",
     "priceInCents": 130,
-    "inStock": true,
-    "isVegan": true
+    "inStock": true
   },
   {
     "id": "3",
     "name": "Peanut Butter Cookie",
     "priceInCents": 160,
-    "inStock": false,
-    "isGlutenFree": true
+    "inStock": false
   },
   {
     "id": "random_generated_id",
