@@ -4,17 +4,23 @@ const { nanoid } = require("nanoid");
 const chalk = require("chalk");
 const path = require("path");
 const figlet = require("figlet");
+const CliTable = require("cli-table");
+const cliSpinners = require("cli-spinners");
 
 const DATA_FILE = path.join(__dirname, "data", "sample-data.json");
-
 let inventory = [];
 let cart = [];
 
 // Load data from the JSON file
 const loadData = () => {
   if (fs.existsSync(DATA_FILE)) {
-    const data = fs.readFileSync(DATA_FILE);
-    inventory = JSON.parse(data);
+    try {
+      const data = fs.readFileSync(DATA_FILE);
+      inventory = JSON.parse(data);
+    } catch (error) {
+      console.error(chalk.red("Error loading data from file:", error.message));
+      inventory = [];
+    }
   } else {
     inventory = [];
   }
@@ -30,14 +36,24 @@ const saveData = () => {
   }
 };
 
-// View all items
+// View all items in a table format
 const viewItems = () => {
-  console.log(chalk.green("Inventory List:"));
-  inventory.forEach((item) => {
-    console.log(
-      `${item.id}: ${item.name} - ${item.priceInCents} cents - In Stock: ${item.inStock}`
-    );
+  const table = new CliTable({
+    head: ["ID", "Name", "Price (cents)", "In Stock"],
+    colWidths: [30, 30, 15, 10],
   });
+
+  inventory.forEach((item) => {
+    table.push([
+      item.id || "",
+      item.name || "",
+      item.priceInCents != null ? item.priceInCents : "",
+      item.inStock ? "Yes" : "No",
+    ]);
+  });
+
+  console.log(chalk.green("Inventory List:"));
+  console.log(table.toString());
 };
 
 // View details of one item
@@ -46,7 +62,7 @@ const viewItemDetails = async () => {
     { name: "id", message: "Enter the ID of the item you want to view:" },
   ]);
 
-  const item = inventory.find((item) => item.id === answer.id.trim());
+  const item = inventory.find((item) => item.id === answer.id);
   if (item) {
     console.log(chalk.yellow("Item Details:"));
     console.log(`ID: ${item.id}`);
@@ -64,8 +80,8 @@ const addItem = async () => {
     { name: "name", message: "Item name:" },
     {
       name: "priceInCents",
+      message: "Price (in cents):",
       validate: (value) => !isNaN(value),
-      message: "Enter the price in cents:",
     },
     { name: "inStock", type: "confirm", message: "Is it in stock?" },
   ]);
@@ -82,38 +98,40 @@ const addItem = async () => {
   console.log(chalk.green("Item added successfully!"));
 };
 
-// Update an existing item
+// Update an item
 const updateItem = async () => {
   const answer = await inquirer.prompt([
     { name: "id", message: "Enter the ID of the item you want to update:" },
-    { name: "priceInCents", message: "Enter the new price in cents:" },
-    { name: "inStock", type: "confirm", message: "Is it in stock?" },
   ]);
 
-  const index = inventory.findIndex((item) => item.id === answer.id.trim());
-  if (index !== -1) {
-    inventory[index].priceInCents = parseInt(answer.priceInCents);
-    inventory[index].inStock = answer.inStock;
+  const item = inventory.find((item) => item.id === answer.id);
+  if (item) {
+    const updateAnswer = await inquirer.prompt([
+      {
+        name: "name",
+        message: `Enter new name (current: ${item.name}):`,
+        default: item.name,
+      },
+      {
+        name: "priceInCents",
+        message: `Enter new price (current: ${item.priceInCents}):`,
+        default: item.priceInCents,
+        validate: (value) => !isNaN(value),
+      },
+      {
+        name: "inStock",
+        type: "confirm",
+        message: "Is it in stock?",
+        default: item.inStock,
+      },
+    ]);
+
+    item.name = updateAnswer.name;
+    item.priceInCents = parseInt(updateAnswer.priceInCents);
+    item.inStock = updateAnswer.inStock;
+
     saveData();
     console.log(chalk.green("Item updated successfully!"));
-  } else {
-    console.log(chalk.red("Item not found!"));
-  }
-};
-
-// Add item to cart
-const addToCart = async () => {
-  const answer = await inquirer.prompt([
-    {
-      name: "id",
-      message: "Enter the ID of the item you want to add to cart:",
-    },
-  ]);
-
-  const item = inventory.find((item) => item.id === answer.id.trim());
-  if (item) {
-    cart.push(item);
-    console.log(chalk.green("Item added to cart!"));
   } else {
     console.log(chalk.red("Item not found!"));
   }
@@ -125,20 +143,69 @@ const viewCart = () => {
     console.log(chalk.yellow("Your shopping cart is empty."));
   } else {
     console.log(chalk.green("Shopping Cart:"));
-    cart.forEach((item) => {
-      console.log(`${item.id}: ${item.name} - ${item.priceInCents} cents`);
+    const table = new CliTable({
+      head: ["ID", "Name", "Price (cents)", "Quantity"],
+      colWidths: [30, 30, 15, 10],
     });
+
+    cart.forEach((item) => {
+      table.push([
+        item.id || "",
+        item.name || "",
+        item.priceInCents != null ? item.priceInCents : "",
+        item.quantity || "",
+      ]);
+    });
+
+    const total = cart.reduce(
+      (sum, item) => sum + item.priceInCents * item.quantity,
+      0
+    );
+    table.push([], ["Total", "", total, ""]);
+
+    console.log(table.toString());
+  }
+};
+
+// Add item to cart
+const addToCart = async () => {
+  const answer = await inquirer.prompt([
+    {
+      name: "id",
+      message: "Enter the ID of the item you want to add to the cart:",
+    },
+    {
+      name: "quantity",
+      message: "Enter the quantity:",
+      validate: (value) => !isNaN(value),
+    },
+  ]);
+
+  const item = inventory.find((item) => item.id === answer.id);
+  if (item) {
+    const cartItem = cart.find((cartItem) => cartItem.id === item.id);
+    if (cartItem) {
+      cartItem.quantity += parseInt(answer.quantity);
+    } else {
+      cart.push({ ...item, quantity: parseInt(answer.quantity) });
+    }
+    console.log(chalk.green("Item added to cart!"));
+  } else {
+    console.log(chalk.red("Item not found!"));
   }
 };
 
 // Cancel cart
 const cancelCart = () => {
   cart = [];
-  console.log(chalk.yellow("Shopping cart cleared!"));
+  console.log(chalk.yellow("Shopping cart has been emptied."));
 };
 
 // Main menu
 const mainMenu = async () => {
+  const spinner = cliSpinners.dots;
+  console.log(chalk.yellow(figlet.textSync("Inventory App")));
+
   const answer = await inquirer.prompt([
     {
       type: "list",
@@ -149,8 +216,8 @@ const mainMenu = async () => {
         "View item details",
         "Add a new item",
         "Update an item",
-        "Add item to cart",
         "View cart",
+        "Add to cart",
         "Cancel cart",
         "Exit",
       ],
@@ -170,11 +237,11 @@ const mainMenu = async () => {
     case "Update an item":
       await updateItem();
       break;
-    case "Add item to cart":
-      await addToCart();
-      break;
     case "View cart":
       viewCart();
+      break;
+    case "Add to cart":
+      await addToCart();
       break;
     case "Cancel cart":
       cancelCart();
@@ -184,16 +251,13 @@ const mainMenu = async () => {
       process.exit();
   }
 
-  // Go back to the main menu
   mainMenu();
 };
 
 // Initialize the application
 const init = () => {
-  console.log(chalk.yellow(figlet.textSync("Inventory App")));
   loadData();
   mainMenu();
 };
 
-// Start application
 init();

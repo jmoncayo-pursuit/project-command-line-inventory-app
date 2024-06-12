@@ -40,5 +40,11 @@
     "name": "Larry the Carry Crunch",
     "priceInCents": null,
     "inStock": "true"
+  },
+  {
+    "id": "QTre2HLf9QttbH3gtU048",
+    "name": "Macaroon",
+    "priceInCents": 6,
+    "inStock": true
   }
 ]
